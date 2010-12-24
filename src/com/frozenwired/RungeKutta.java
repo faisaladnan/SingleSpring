@@ -1,29 +1,25 @@
 package com.frozenwired;
 
 public class RungeKutta implements Runnable {
-	Spring spring;
 	RoundMass roundMass;
 	SingleSpringMainScreen mainScreen;
+	SpringCanvas canvas;
 	private int numVars = 2;
 	private double m_time = -9999;
 	private double sim_time = 0;
 	private double[] vars;
 	private final int MAX_VARS = 40;
-	class Spring
-	{
-	  double springConst = 3;
-	  double restLength = 2.5;
-	  double x1 = 0;  // left end of spring
-	}
 
 	class RoundMass
 	{
 	  double mass = 0.5;
 	  double damping = 0.2;
 	}
-	public RungeKutta(SingleSpringMainScreen mainScreen)
+	public RungeKutta(SingleSpringMainScreen mainScreen 
+					,SpringCanvas canvas
+					)
 	{
-		spring = new Spring();
+		this.canvas = canvas;
 		roundMass = new RoundMass();
 		this.mainScreen = mainScreen;
 		vars = new double[MAX_VARS];		
@@ -104,7 +100,7 @@ public class RungeKutta implements Runnable {
 	public double diffeq1(double t, double[] x)   // t = time, x = array of variables
 	{
 		// v' = -(k/m)(x - R) - (b/m) v
-		double r = -spring.springConst*(x[0] - spring.x1 - spring.restLength)
+		double r = -canvas.getSpring().getSpringConstant()*(x[0] - canvas.getSpring().getInitialLen() - canvas.getSpring().getRestLen())
 		- roundMass.damping*x[1];
 		return r/roundMass.mass;
 	}
@@ -127,6 +123,8 @@ public class RungeKutta implements Runnable {
 		while (true)
 		{
 			calculationLoop();
+			canvas.getSpring().move(vars[0]);
+			canvas.repaint();			
 			try {
 				Thread.sleep(33);
 			} catch (InterruptedException e) {
@@ -137,10 +135,35 @@ public class RungeKutta implements Runnable {
 	}
 	private void outputMessage()
 	{
-		String msg = "t = "+(sim_time)+
-		"   x = "+(vars[0])+
-		"   v = "+(vars[1])+"\n";
-		mainScreen.updateText(msg);
+		mainScreen.updateText("t: " + double2str(sim_time) + 
+				" x: " + double2str(vars[0]) +
+				" v: " + double2str(vars[1]) 
+				);
+	}
+	private String double2str(double d)
+	{
+		String str = "";
+		Double obj = new Double(d);
+		String ds = obj.toString();
+		if (d == 0)
+			ds = "0.000";
+		if (ds.length() < 5)
+			ds = ds + generateZeros(5-ds.length()); 
+		int delimiterIndex = ds.indexOf(".");
+		int decLen = ds.substring(delimiterIndex, ds.length()).length()-1; 
+		if (decLen < 3)
+			ds = ds + generateZeros(3-decLen);
+		str = ds.substring(0, delimiterIndex) + ds.substring(delimiterIndex, delimiterIndex+4);
+		return str;
+	}
+	private String generateZeros(int n)
+	{
+		String res = "";
+		for (int i=0;i<n;i++)
+		{
+			res = res + "0";
+		}
+		return res;
 	}
 	private void calculationLoop()
 	{
