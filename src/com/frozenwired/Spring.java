@@ -4,16 +4,18 @@ public class Spring {
 	private double restLen;
 	private double springConstant;
 	private double len;
+	private double origin;
 	private double initialLen;
-	public Spring(double restLen, double springConstant, double initialLen)
+	public Spring(double restLen, double springConstant, double origin, double initialLen)
 	{
 		this.restLen = restLen;
 		this.springConstant = springConstant;
+		this.origin = origin;
+		this.len = origin;
 		this.initialLen = initialLen;
-		this.len = initialLen;
 	}
 	
-	public void move(double len)
+	public void setLen(double len)
 	{
 		this.len = len;
 	}
@@ -29,8 +31,17 @@ public class Spring {
 	{
 		return this.springConstant;
 	}
+	public double getOrigin()
+	{
+		return this.origin;
+	}
 	public double getInitialLen()
 	{
 		return this.initialLen;
 	}
+	public void setInitialLen(double initialLen)
+	{
+		this.initialLen = initialLen;
+	}
+
 }
