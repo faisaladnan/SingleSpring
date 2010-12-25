@@ -1,36 +1,24 @@
 package com.frozenwired;
 
-public class RungeKutta implements Runnable {
-	RoundMass roundMass;
-	SingleSpringMainScreen mainScreen;
-	SpringCanvas canvas;
-	private int numVars = 2;
-	private double m_time = -9999;
-	private double sim_time = 0;
-	private double[] vars;
-	private final int MAX_VARS = 40;
+import java.util.Vector;
 
-	class RoundMass
-	{
-	  double mass = 0.5;
-	  double damping = 0.2;
-	}
-	public RungeKutta(SingleSpringMainScreen mainScreen 
-					,SpringCanvas canvas
-					)
-	{
-		this.canvas = canvas;
-		roundMass = new RoundMass();
-		this.mainScreen = mainScreen;
-		vars = new double[MAX_VARS];		
-	}
+public abstract class RungeKutta {
+	private Vector listeners = new Vector();
+	protected double time = -9999;
+	protected double simulationTime = 0;
+	private final int MAX_VARS = 40;
+	protected double[] vars = new double[MAX_VARS];
+	private double now;
+	private double h;
+	protected int numVars;	
+
 	// A version of Runge-Kutta method using arrays
 	// Calculates the values of the variables at time t+h
 	// t = last time value
 	// h = time increment
 	// vars = array of variables
 	// N = number of variables in x array
-	public void solve(double t, double h)
+	protected void solve(double t, double h, int numVars)
 	{
 		int N = numVars;
 		int i;
@@ -59,7 +47,7 @@ public class RungeKutta implements Runnable {
 	
 	// executes the i-th diffeq
 	// i = which diffeq,  t=time,  x= array of variables
-	public double evaluate(int i, double t, double[] x)
+	protected double evaluate(int i, double t, double[] x)
 	{
 		switch (i)
 		{ case 0:  return diffeq0(t, x);
@@ -92,39 +80,22 @@ public class RungeKutta implements Runnable {
       w' = g(t, y, w, z, ...)
 	 */
 
-	public double diffeq0(double t, double[] x)   // t = time, x = array of variables
-	{
-		return x[1];  // x' = v
-	}
-
-	public double diffeq1(double t, double[] x)   // t = time, x = array of variables
-	{
-		// v' = -(k/m)(x - R) - (b/m) v
-		double r = -canvas.getSpring().getSpringConstant()*(x[0] - canvas.getSpring().getInitialLen() - canvas.getSpring().getRestLen())
-		- roundMass.damping*x[1];
-		return r/roundMass.mass;
-	}
-
-	public double diffeq2(double t, double[] x)
-	{ return 0; }
-	public double diffeq3(double t, double[] x)
-	{ return 0; }
-	public double diffeq4(double t, double[] x)
-	{ return 0; }
-	public double diffeq5(double t, double[] x)
-	{ return 0; }
-	public double diffeq6(double t, double[] x)
-	{ return 0; }
-	public double diffeq7(double t, double[] x)
-	{ return 0; }
+	public abstract double diffeq0(double t, double[] x);
+	public abstract double diffeq1(double t, double[] x);
+	public abstract double diffeq2(double t, double[] x);
+	public abstract double diffeq3(double t, double[] x);
+	public abstract double diffeq4(double t, double[] x);	
+	public abstract double diffeq5(double t, double[] x);
+	public abstract double diffeq6(double t, double[] x);
+	public abstract double diffeq7(double t, double[] x);
 
 	public void run() {
 		// TODO Auto-generated method stub
 		while (true)
 		{
 			calculationLoop();
-			canvas.getSpring().move(vars[0]);
-			canvas.repaint();			
+//			canvas.getSpring().move(vars[0]);
+//			canvas.repaint();			
 			try {
 				Thread.sleep(33);
 			} catch (InterruptedException e) {
@@ -135,48 +106,23 @@ public class RungeKutta implements Runnable {
 	}
 	private void outputMessage()
 	{
-		mainScreen.updateText("t: " + double2str(sim_time) + 
-				" x: " + double2str(vars[0]) +
-				" v: " + double2str(vars[1]) 
-				);
-	}
-	private String double2str(double d)
-	{
-		String str = "";
-		Double obj = new Double(d);
-		String ds = obj.toString();
-		if (d == 0)
-			ds = "0.000";
-		if (ds.length() < 5)
-			ds = ds + generateZeros(5-ds.length()); 
-		int delimiterIndex = ds.indexOf(".");
-		int decLen = ds.substring(delimiterIndex, ds.length()).length()-1; 
-		if (decLen < 3)
-			ds = ds + generateZeros(3-decLen);
-		str = ds.substring(0, delimiterIndex) + ds.substring(delimiterIndex, delimiterIndex+4);
-		return str;
-	}
-	private String generateZeros(int n)
-	{
-		String res = "";
-		for (int i=0;i<n;i++)
-		{
-			res = res + "0";
-		}
-		return res;
+//		mainScreen.updateText("t: " + double2str(simulationTime) + 
+//				" x: " + double2str(vars[0]) +
+//				" v: " + double2str(vars[1]) 
+//				);
 	}
 	private void calculationLoop()
 	{
 		outputMessage();
 		double now = (double)System.currentTimeMillis()/1000;
 		double h;
-		if (m_time < 0)
+		if (time < 0)
 		{
-			sim_time = 0;
+			simulationTime = 0;
 			h = 0.05;
 		} else
 		{
-			h = now - m_time;
+			h = now - time;
 			if (h==0) return;
 			if (h > 0.25) h = 0.25;
 		}
@@ -184,10 +130,56 @@ public class RungeKutta implements Runnable {
 		{
 			h = 0.1;
 		}
-		m_time = now;
-		System.out.println("now " + now + ", h " + h + ", sim_time " + sim_time);
-		solve(sim_time, h);
-		sim_time += h;
+		time = now;
+		System.out.println("now " + now + ", h " + h + ", sim_time " + simulationTime);
+		solve(simulationTime, h, 2);
+		simulationTime += h;
 	}
+
+	public abstract void setNumVars(int numVars);
+	public abstract void init();
 	
+	public void calculate()
+	{
+		fireOnCalculate();
+		now = (double)System.currentTimeMillis()/1000;		
+		if (time < 0)
+		{
+			simulationTime = 0;
+			h = 0.05;
+		} else
+		{
+			h = now - time;
+			if (h==0) return;
+			if (h > 0.25) h = 0.25;
+		}
+		if (h<0 || h>3)
+		{
+			h = 0.1;
+		}
+		time = now;
+		solve(simulationTime, h, numVars);
+		simulationTime += h;
+	}	
+	
+	public void addRungeKuttaEventListener(RungeKuttaEventListener listener)
+	{
+		listeners.addElement(listener);
+	}
+	public void removeRungeKuttaEventListener(RungeKuttaEventListener listener)
+	{
+		listeners.removeElement(listener);
+	}
+	private void fireOnCalculate()
+	{
+		for (int i=0;i<listeners.size();i++)
+		{
+			Object obj = listeners.elementAt(i);
+			if (obj instanceof RungeKuttaEventListener)
+			{
+				RungeKuttaEventListener listener = (RungeKuttaEventListener)obj;
+				listener.onCalculate(simulationTime, vars);
+			}			
+		}
+	}
 }
