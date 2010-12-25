@@ -4,7 +4,7 @@ import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.UiApplication;
 
-public class SpringCanvas extends Field {
+public class SpringCanvas extends Field implements Canvas {
 	private int xa = 100;
 	private int ya = 50;
 	private int drawAreaWidth = 100;
@@ -60,10 +60,6 @@ public class SpringCanvas extends Field {
 		
 	}
 	
-	public Spring getSpring()
-	{
-		return this.spring;
-	}
 	public void repaint()
 	{
 		synchronized (UiApplication.getUiApplication().getEventLock()) {
