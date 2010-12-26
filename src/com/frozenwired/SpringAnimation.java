@@ -2,18 +2,23 @@ package com.frozenwired;
 
 import java.util.Vector;
 
+import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.UiApplication;
+import net.rim.device.api.ui.component.Dialog;
 
-public class SpringAnimation implements Runnable, RungeKuttaEventListener {
+public class SpringAnimation implements Runnable, RungeKuttaEventListener, CanvasListener {
 	private Vector listeners = new Vector();
 	private Canvas canvas;
 	private Spring spring;
 	private SpringRungeKutta springRungeKutta;
 	private boolean isAnimating = false;
+	Thread animationThread;
 	public SpringAnimation(Spring spring, Canvas canvas)
 	{
 		this.spring = spring;
 		this.canvas = canvas;
+		this.canvas.addCanvasListener(this);
 		this.springRungeKutta = new SpringRungeKutta(spring);
 		this.springRungeKutta.addRungeKuttaEventListener(this);
 		isAnimating = true;
@@ -48,10 +53,12 @@ public class SpringAnimation implements Runnable, RungeKuttaEventListener {
 	public Thread startAnimation()
 	{
 		this.isAnimating = true;
-		Thread thread = new Thread(this);
+		if (animationThread != null)
+			animationThread = null;
+		animationThread = new Thread(this);
 		springRungeKutta.init();
-		thread.start();
-		return thread;
+		animationThread.start();
+		return animationThread;
 	}
 	public void onCalculate(double simulationTime, double[] vars) {
 		String msg = "t: " + double2str(simulationTime) + 
@@ -105,4 +112,22 @@ public class SpringAnimation implements Runnable, RungeKuttaEventListener {
 			}			
 		}
 	}
+	public void onCanvasClicked(Canvas canvas) {
+		System.out.println("clicked");
+		if (isAnimating)
+			pauseAnimation();
+		else
+			startAnimation();
+	}
+	public void onCanvasMoved(Canvas canvas, int delta) {
+		System.out.println("delta: " + delta);
+		spring.setInitialLen(delta/canvas.getVerticalScaleConstant() + spring.getLen());
+		spring.setLen(delta/canvas.getVerticalScaleConstant() + spring.getLen());
+		canvas.repaint();		
+	}
+	public void onCanvasReleased(Canvas canvas) {
+//		startAnimation();
+		System.out.println("released");
+	}
+
 }
