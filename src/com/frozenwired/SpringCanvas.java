@@ -1,18 +1,29 @@
 package com.frozenwired;
 
-import net.rim.device.api.ui.Field;
-import net.rim.device.api.ui.Graphics;
-import net.rim.device.api.ui.UiApplication;
+import java.util.Vector;
 
-public class SpringCanvas extends Field implements Canvas {
+import net.rim.device.api.system.KeypadListener;
+import net.rim.device.api.ui.Color;
+import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.FieldChangeListener;
+import net.rim.device.api.ui.Graphics;
+import net.rim.device.api.ui.TouchEvent;
+import net.rim.device.api.ui.TouchGesture;
+import net.rim.device.api.ui.UiApplication;
+import net.rim.device.api.ui.component.Dialog;
+
+public class SpringCanvas extends Field implements Canvas,FieldChangeListener {
+	private Vector listeners = new Vector();
 	private int xa = 100;
 	private int ya = 50;
 	private int drawAreaWidth = 100;
 	private double verticalScaleConstant = 40;
 	private Spring spring;
+	private boolean isClicked = false;
 	public SpringCanvas(Spring spring)
 	{
 		this.spring = spring;
+		setChangeListener(this);
 	}
 	protected void layout(int width, int height) {
 		setExtent(width, 200);
@@ -54,9 +65,19 @@ public class SpringCanvas extends Field implements Canvas {
 					);				
 		
 		// draw mass
-		g.drawRect(xa, 
-				  (int)(spring.getLen()*verticalScaleConstant) + ya, // y4 
-				   100, 25);
+		if (isFocus())
+		{
+			g.setColor(Color.BLUE);
+			g.drawRect(xa, 
+					(int)(spring.getLen()*verticalScaleConstant) + ya, // y4 
+					100, 25);
+		} else
+		{
+			g.setColor(Color.BLACK);
+			g.drawRect(xa, 
+					(int)(spring.getLen()*verticalScaleConstant) + ya, // y4 
+					100, 25);			
+		}
 		
 	}
 	
@@ -65,5 +86,94 @@ public class SpringCanvas extends Field implements Canvas {
 		synchronized (UiApplication.getUiApplication().getEventLock()) {
 			invalidate();
 		}
+	}
+	
+	public boolean isFocusable()
+	{
+		return true;
+	}
+	
+	protected void drawFocus(Graphics graphics, boolean on)
+	{
+		
+	}
+	protected void onFocus(int direction)
+	{
+		super.onFocus(direction);
+		invalidate();
+	}
+	
+	protected void onUnFocus() 
+	{
+		super.onUnfocus();
+		invalidate();
+	}
+	
+	protected boolean navigationClick(int status, int time)
+	{
+		System.out.println("navigationClick!");	
+		if (this.isClicked)
+			this.isClicked = false;
+		else
+			this.isClicked = true;
+		fieldChangeNotify(0);
+		for (int i=0;i<listeners.size();i++)
+		{
+			Object obj = listeners.elementAt(i);
+			if (obj instanceof CanvasListener)
+			{
+				CanvasListener listener = (CanvasListener)obj;
+				listener.onCanvasClicked(this);
+			}
+		}
+		return true;
+	}
+	protected boolean navigationMovement(int dx, int  dy, int status, int time)
+	{
+		System.out.println("navigationMovement!");				
+		fieldChangeNotify(0);
+		if (this.isClicked)
+		{
+			for (int i=0;i<listeners.size();i++)
+			{
+				Object obj = listeners.elementAt(i);
+				if (obj instanceof CanvasListener)
+				{
+					CanvasListener listener = (CanvasListener)obj;
+					listener.onCanvasMoved(this, dy);
+				}
+			}			
+			return true;
+		} else
+			return false;
+	}
+	protected boolean navigationUnclick(int status, int time)
+	{
+		System.out.println("navigationUnclick!");						
+		fieldChangeNotify(0);
+		for (int i=0;i<listeners.size();i++)
+		{
+			Object obj = listeners.elementAt(i);
+			if (obj instanceof CanvasListener)
+			{
+				CanvasListener listener = (CanvasListener)obj;
+				listener.onCanvasReleased(this);
+			}
+		}
+		return true;
+	}
+	public void addCanvasListener(CanvasListener canvasListener) {
+		listeners.addElement(canvasListener);		
+	}
+	public void removeCanvasListener(CanvasListener canvasListener) {
+		listeners.removeElement(canvasListener);
+	}
+	public void fieldChanged(Field field, int context) {
+		System.out.println("fieldChanged!");		
+	}
+	
+	public double getVerticalScaleConstant()
+	{
+		return this.verticalScaleConstant;
 	}
 }
