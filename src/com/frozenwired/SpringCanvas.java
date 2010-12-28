@@ -15,13 +15,14 @@ import net.rim.device.api.ui.component.Dialog;
 
 public class SpringCanvas extends Field implements Canvas,FieldChangeListener {
 	private Vector listeners = new Vector();
-	private int xa = 100;
-	private int ya = 50;
-	private int drawAreaWidth = 100;
+	private int xa = 1;
+	private int ya = 20;
+	private int drawAreaWidth = 50;
 	private double verticalScaleConstant = 40;
 	private Spring spring;
 	private boolean isClicked = false;
-
+	private int canvasWidth = -1;
+	private int canvasHeight = -1;
 	public SpringCanvas(Spring spring)
 	{
 		super(ButtonField.CONSUME_CLICK);
@@ -29,16 +30,48 @@ public class SpringCanvas extends Field implements Canvas,FieldChangeListener {
 		setChangeListener(this);
 	}
 	protected void layout(int width, int height) {
-		setExtent(width, 200);
+		setExtent(getPreferredWidth(), getPreferredHeight());
 	}
-
+	public int getPreferredHeight()
+	{
+		if (canvasHeight < 0)
+		{
+			return getScreen().getVisibleHeight();
+		} else
+			return canvasHeight;
+		
+	}
+	public int getPreferredWidth()
+	{
+		if (canvasWidth < 0)
+		{
+			return getScreen().getVisibleWidth();
+		} else
+			return canvasWidth;
+	}
+	public void setCanvasWidth(int canvasWidth)
+	{
+		this.canvasWidth = canvasWidth;
+	}
+	public int getCanvasWidth()
+	{
+		return this.canvasWidth;
+	}	
+	public void setCanvasHeight(int canvasHeight)
+	{
+		this.canvasHeight = canvasHeight;
+	}
+	public int setCanvasWidth()
+	{
+		return this.canvasHeight;
+	}		
 	protected void paint(Graphics g) {
 		// TODO Auto-generated method stub
-		g.drawRect(0, 0, 300, 200);
+//		g.drawRect(0, 0, 300, 200);
 		
 		// draw initial line
 		g.drawLine( xa+drawAreaWidth/2, 
-					ya-25, 			
+					0, 			
 					xa+drawAreaWidth/2,
 					ya 
 					);
@@ -73,13 +106,13 @@ public class SpringCanvas extends Field implements Canvas,FieldChangeListener {
 			g.setColor(Color.BLUE);
 			g.drawRect(xa, 
 					(int)(spring.getLen()*verticalScaleConstant) + ya, // y4 
-					100, 25);
+					drawAreaWidth, 25);
 		} else
 		{
 			g.setColor(Color.BLACK);
 			g.drawRect(xa, 
 					(int)(spring.getLen()*verticalScaleConstant) + ya, // y4 
-					100, 25);			
+					drawAreaWidth, 25);			
 		}
 		
 	}
