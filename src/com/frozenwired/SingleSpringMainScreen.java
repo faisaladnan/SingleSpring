@@ -16,7 +16,7 @@ public class SingleSpringMainScreen extends MainScreen implements AnimationListe
 	Spring spring = new Spring(2.5, 3, 0, 4);
 	SpringCanvas canvas = new SpringCanvas(spring);
 	SpringAnimation springAnimation = new SpringAnimation(spring, canvas);	
-	BasicEditField lenField = new BasicEditField("Len: ","2.500");	
+	BasicEditField lenField = new BasicEditField("Len: ","0.000");	
 	public SingleSpringMainScreen()
 	{
 		setTitle("Single Spring");
@@ -24,7 +24,7 @@ public class SingleSpringMainScreen extends MainScreen implements AnimationListe
 		add(new LabelField("Simulation Parameters:"));
 		add(textField);
 		add(new SeparatorField());
-		ButtonField lenButton = new ButtonField("Change");
+		ButtonField lenButton = new ButtonField("Change", ButtonField.CONSUME_CLICK);
 		FlowFieldManager lenManager = new FlowFieldManager();
 		lenManager.add(lenField);
 		lenManager.add(lenButton);
