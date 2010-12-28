@@ -16,7 +16,7 @@ public class SingleSpringMainScreen extends MainScreen implements AnimationListe
 	Spring spring = new Spring(2.5, 3, 0, 4);
 	SpringCanvas canvas = new SpringCanvas(spring);
 	SpringAnimation springAnimation = new SpringAnimation(spring, canvas);	
-	BasicEditField lenField = new BasicEditField("Len: ","0.000");	
+//	BasicEditField lenField = new BasicEditField("Len: ","0.000");	
 	public SingleSpringMainScreen()
 	{
 		setTitle("Single Spring");
@@ -24,13 +24,13 @@ public class SingleSpringMainScreen extends MainScreen implements AnimationListe
 		add(new LabelField("Simulation Parameters:"));
 		add(textField);
 		add(new SeparatorField());
-		ButtonField lenButton = new ButtonField("Change", ButtonField.CONSUME_CLICK);
-		FlowFieldManager lenManager = new FlowFieldManager();
-		lenManager.add(lenField);
-		lenManager.add(lenButton);
+//		ButtonField lenButton = new ButtonField("Change", ButtonField.CONSUME_CLICK);
+//		FlowFieldManager lenManager = new FlowFieldManager();
+//		lenManager.add(lenField);
+//		lenManager.add(lenButton);
 		add(canvas);
 		add(new SeparatorField());
-		add(lenManager);
+//		add(lenManager);
 		springAnimation.addAnimationListener(this);
 		springAnimation.startAnimation();
 	}
@@ -38,15 +38,15 @@ public class SingleSpringMainScreen extends MainScreen implements AnimationListe
 	protected void makeMenu(Menu menu, int instance)
 	{
 		super.makeMenu(menu, instance);
-		menu.add(new MenuItem("Restart Animation", 10, 10) {			
-			public void run() {
-				springAnimation.pauseAnimation();
-				String len = lenField.getText();				
-				spring.setInitialLen(Double.parseDouble(len));
-				springAnimation.startAnimation();
-			}
-		});
-		menu.add(new MenuItem("Start Animation", 20, 10) {			
+//		menu.add(new MenuItem("Restart Animation", 10, 10) {			
+//			public void run() {
+//				springAnimation.pauseAnimation();
+//				String len = lenField.getText();				
+//				spring.setInitialLen(Double.parseDouble(len));
+//				springAnimation.startAnimation();
+//			}
+//		});
+		menu.add(new MenuItem("Resume Animation", 20, 10) {			
 			public void run() {
 				springAnimation.resumeAnimation();
 			}
