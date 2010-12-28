@@ -10,6 +10,7 @@ import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.TouchEvent;
 import net.rim.device.api.ui.TouchGesture;
 import net.rim.device.api.ui.UiApplication;
+import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.Dialog;
 
 public class SpringCanvas extends Field implements Canvas,FieldChangeListener {
@@ -20,8 +21,10 @@ public class SpringCanvas extends Field implements Canvas,FieldChangeListener {
 	private double verticalScaleConstant = 40;
 	private Spring spring;
 	private boolean isClicked = false;
+
 	public SpringCanvas(Spring spring)
 	{
+		super(ButtonField.CONSUME_CLICK);
 		this.spring = spring;
 		setChangeListener(this);
 	}
@@ -112,55 +115,74 @@ public class SpringCanvas extends Field implements Canvas,FieldChangeListener {
 	protected boolean navigationClick(int status, int time)
 	{
 		System.out.println("navigationClick!");	
-		if (this.isClicked)
-			this.isClicked = false;
-		else
-			this.isClicked = true;
-		fieldChangeNotify(0);
-		for (int i=0;i<listeners.size();i++)
+		if ((status & KeypadListener.STATUS_FOUR_WAY) == KeypadListener.STATUS_FOUR_WAY)
 		{
-			Object obj = listeners.elementAt(i);
-			if (obj instanceof CanvasListener)
-			{
-				CanvasListener listener = (CanvasListener)obj;
-				listener.onCanvasClicked(this);
-			}
-		}
-		return true;
-	}
-	protected boolean navigationMovement(int dx, int  dy, int status, int time)
-	{
-		System.out.println("navigationMovement!");				
-		fieldChangeNotify(0);
-		if (this.isClicked)
-		{
+			if (this.isClicked)
+				this.isClicked = false;
+			else
+				this.isClicked = true;
+			fieldChangeNotify(0);
 			for (int i=0;i<listeners.size();i++)
 			{
 				Object obj = listeners.elementAt(i);
 				if (obj instanceof CanvasListener)
 				{
 					CanvasListener listener = (CanvasListener)obj;
-					listener.onCanvasMoved(this, dy);
+					listener.onCanvasClicked(this);
 				}
-			}			
+			}
 			return true;
 		} else
-			return false;
+		{
+			fieldChangeNotify(0);
+			return true;
+		}
+	}
+	protected boolean navigationMovement(int dx, int  dy, int status, int time)
+	{
+		System.out.println("navigationMovement!");	
+		if ((status & KeypadListener.STATUS_FOUR_WAY) == KeypadListener.STATUS_FOUR_WAY)
+		{
+			fieldChangeNotify(0);
+			if (this.isClicked)
+			{
+				for (int i=0;i<listeners.size();i++)
+				{
+					Object obj = listeners.elementAt(i);
+					if (obj instanceof CanvasListener)
+					{
+						CanvasListener listener = (CanvasListener)obj;
+						listener.onCanvasMoved(this, dy);
+					}
+				}			
+				return true;
+			} else
+				return false;
+		} else
+		{
+			return super.navigationMovement(dx, dy, status, time);
+		}
 	}
 	protected boolean navigationUnclick(int status, int time)
 	{
-		System.out.println("navigationUnclick!");						
-		fieldChangeNotify(0);
-		for (int i=0;i<listeners.size();i++)
+		System.out.println("navigationUnclick!");		
+		if ((status & KeypadListener.STATUS_FOUR_WAY) == KeypadListener.STATUS_FOUR_WAY)
 		{
-			Object obj = listeners.elementAt(i);
-			if (obj instanceof CanvasListener)
+			fieldChangeNotify(0);
+			for (int i=0;i<listeners.size();i++)
 			{
-				CanvasListener listener = (CanvasListener)obj;
-				listener.onCanvasReleased(this);
+				Object obj = listeners.elementAt(i);
+				if (obj instanceof CanvasListener)
+				{
+					CanvasListener listener = (CanvasListener)obj;
+					listener.onCanvasReleased(this);
+				}
 			}
+			return true;
+		} else
+		{
+			return super.navigationUnclick(status, time);
 		}
-		return true;
 	}
 	public void addCanvasListener(CanvasListener canvasListener) {
 		listeners.addElement(canvasListener);		
@@ -176,4 +198,63 @@ public class SpringCanvas extends Field implements Canvas,FieldChangeListener {
 	{
 		return this.verticalScaleConstant;
 	}
+	protected boolean touchEvent(TouchEvent message) 
+	{
+		int touchX = message.getX(1);
+		int touchY = message.getY(1);
+		int y4 = (int)(spring.getLen()*verticalScaleConstant) + ya;
+		
+		// If click position is in the rectangle mass
+		if ((touchX >= xa) && (touchX <= xa+drawAreaWidth)
+				&& (touchY >= y4) && (touchY <= y4+25))
+		{
+			switch(message.getEvent()) {
+			case TouchEvent.DOWN:
+				this.isClicked = true;
+				System.out.println("TouchEvent.DOWN globalY " + message.getGlobalY(1));
+				for (int i=0;i<listeners.size();i++)
+				{
+					Object obj = listeners.elementAt(i);
+					if (obj instanceof CanvasListener)
+					{
+						CanvasListener listener = (CanvasListener)obj;
+						listener.onCanvasTouchDown(this);
+					}
+				}				
+				return true;
+			}
+		}
+		if (this.isClicked)
+		{
+			switch(message.getEvent())
+			{
+			case TouchEvent.MOVE:
+				System.out.println("A MOVE action occurred touchY:" + touchY + ", y4:" + y4);
+				for (int i=0;i<listeners.size();i++)
+				{
+					Object obj = listeners.elementAt(i);
+					if (obj instanceof CanvasListener)
+					{
+						CanvasListener listener = (CanvasListener)obj;
+						listener.onCanvasMoved(this, touchY-y4);
+					}
+				}
+		        return true;
+			case TouchEvent.UP:	
+				this.isClicked = false;
+				System.out.println("A UP action occurred");
+				for (int i=0;i<listeners.size();i++)
+				{
+					Object obj = listeners.elementAt(i);
+					if (obj instanceof CanvasListener)
+					{
+						CanvasListener listener = (CanvasListener)obj;
+						listener.onCanvasTouchUp(this);
+					}
+				}				
+				return true;		        
+			}			
+		}
+		return false;
+	}	
 }
