@@ -4,6 +4,7 @@ import java.util.Vector;
 
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
+import net.rim.device.api.ui.TouchEvent;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.Dialog;
 
@@ -13,6 +14,7 @@ public class SpringAnimation implements Runnable, RungeKuttaEventListener, Canva
 	private Spring spring;
 	private SpringRungeKutta springRungeKutta;
 	private boolean isAnimating = false;
+	private boolean isMoved = false;
 	Thread animationThread;
 	public SpringAnimation(Spring spring, Canvas canvas)
 	{
@@ -116,11 +118,20 @@ public class SpringAnimation implements Runnable, RungeKuttaEventListener, Canva
 		System.out.println("clicked");
 		if (isAnimating)
 			pauseAnimation();
-		else
-			startAnimation();
+		else {
+			if (this.isMoved)
+			{
+				startAnimation();
+			} else
+			{
+				resumeAnimation();
+			}
+			this.isMoved = false;
+		}
 	}
 	public void onCanvasMoved(Canvas canvas, int delta) {
 		System.out.println("delta: " + delta);
+		this.isMoved = true;
 		spring.setInitialLen(delta/canvas.getVerticalScaleConstant() + spring.getLen());
 		spring.setLen(delta/canvas.getVerticalScaleConstant() + spring.getLen());
 		canvas.repaint();		
@@ -129,5 +140,21 @@ public class SpringAnimation implements Runnable, RungeKuttaEventListener, Canva
 //		startAnimation();
 		System.out.println("released");
 	}
-
+	public void onCanvasTouchDown(Canvas canvas) {
+		System.out.println("onCanvasTap " + isAnimating);
+		if (isAnimating)
+			pauseAnimation();
+		
+	}
+	public void onCanvasTouchUp(Canvas canvas) {
+		// TODO Auto-generated method stub
+		if (this.isMoved)
+		{
+			startAnimation();
+		} else
+		{
+			resumeAnimation();
+		}
+		this.isMoved = false;
+	}
 }
