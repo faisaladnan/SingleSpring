@@ -14,29 +14,68 @@ import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.Dialog;
 
 public class SpringCanvas extends Field implements Canvas,FieldChangeListener {
+
 	private Vector listeners = new Vector();
-	private int xa = 1;
-	private int ya = 20;
+	private int xa = 0;
+	private int ya = 10;
+//	private int maxNoOfAngle = 3;
 	private int drawAreaWidth = 50;
-	private double verticalScaleConstant = 40;
+	private double verticalScaleConstant = 40; // default value
 	private Spring spring;
+	private Mass mass;
 	private boolean isClicked = false;
-	private int canvasWidth = -1;
+	private int canvasWidth = 50;
 	private int canvasHeight = -1;
-	public SpringCanvas(Spring spring)
+	private Animation animation;
+//	public SpringCanvas(Spring spring)
+//	{
+//		super(ButtonField.CONSUME_CLICK);
+//		verticalScaleConstant = (getPreferredHeight()/2)/spring.getRestLen();
+//		this.spring = spring;
+//		this.spring.setVerticalScaleConstant(verticalScaleConstant);
+//		this.spring.setCanvasWidth(getPreferredWidth());
+//		this.spring.setXa(xa);
+//		this.spring.setYa(ya);
+////		maxNoOfAngle = (int)spring.getSpringConstant()*2;
+////		if (maxNoOfAngle%2==0)
+////			maxNoOfAngle = maxNoOfAngle + 1;
+//			
+//		setChangeListener(this);
+//	}
+	public SpringCanvas(Spring spring, Mass mass, int canvasWidth, int canvasHeight)
 	{
 		super(ButtonField.CONSUME_CLICK);
+		verticalScaleConstant = (canvasHeight/2)/spring.getRestLen();
 		this.spring = spring;
+		this.spring.setVerticalScaleConstant(verticalScaleConstant);
+		this.spring.setCanvasWidth(canvasWidth);
+		this.spring.setXa(xa);
+		this.spring.setYa(ya);
+//		maxNoOfAngle = (int)spring.getSpringConstant()*2;
+//		if (maxNoOfAngle%2==0)
+//			maxNoOfAngle = maxNoOfAngle + 1;
+			
 		setChangeListener(this);
+
+		this.canvasWidth = canvasWidth;
+		this.canvasHeight = canvasHeight;
+		this.drawAreaWidth = canvasWidth;
+		this.mass = mass;
 	}
 	protected void layout(int width, int height) {
-		setExtent(getPreferredWidth(), getPreferredHeight());
+		if (width >= getPreferredWidth()) {
+            width = getPreferredWidth();
+        }
+        if (height >= getPreferredHeight()) {
+            height = getPreferredHeight();
+        }
+        setExtent(width, height);
 	}
 	public int getPreferredHeight()
 	{
 		if (canvasHeight < 0)
 		{
-			return getScreen().getVisibleHeight();
+			return getScreen().getVisibleHeight() - getTop();
 		} else
 			return canvasHeight;
 		
@@ -67,55 +106,17 @@ public class SpringCanvas extends Field implements Canvas,FieldChangeListener {
 	}		
 	protected void paint(Graphics g) {
 		// TODO Auto-generated method stub
-//		g.drawRect(0, 0, 300, 200);
-		
-		// draw initial line
-		g.drawLine( xa+drawAreaWidth/2, 
-					0, 			
-					xa+drawAreaWidth/2,
-					ya 
-					);
-		// draw line from point 0 to 1
-		g.drawLine( xa+drawAreaWidth/2, // x0 
-					ya, 				// y0
-					xa+drawAreaWidth,   // x1
-					(int)(spring.getLen()*verticalScaleConstant)/6 + ya // y1
-					);
-		// draw line from point 1 to 2
-		g.drawLine( xa+drawAreaWidth, // x1 
-					(int)(spring.getLen()*verticalScaleConstant)/6 + ya, // y1
-					xa,   // x2
-					(int)(spring.getLen()*verticalScaleConstant)/2 + ya // y2
-					);
-		// draw line from point 2 to 3
-		g.drawLine( xa,   // x2
-					(int)(spring.getLen()*verticalScaleConstant)/2 + ya, // y2
-					xa+drawAreaWidth,   // x3
-					(int)(spring.getLen()*verticalScaleConstant)*5/6 + ya // y3
-					);		
-		// draw line from point 3 to 4
-		g.drawLine( xa+drawAreaWidth,   // x3
-					(int)(spring.getLen()*verticalScaleConstant)*5/6 + ya, // y3
-					xa+drawAreaWidth/2, // x4
-					(int)(spring.getLen()*verticalScaleConstant) + ya // y4
-					);				
+//		g.drawRect(0, 0, getPreferredWidth(), getPreferredHeight());
+
+		// draw spring
+		spring.draw(g);
 		
 		// draw mass
-		if (isFocus())
-		{
-			g.setColor(Color.BLUE);
-			g.drawRect(xa, 
-					(int)(spring.getLen()*verticalScaleConstant) + ya, // y4 
-					drawAreaWidth, 25);
-		} else
-		{
-			g.setColor(Color.BLACK);
-			g.drawRect(xa, 
-					(int)(spring.getLen()*verticalScaleConstant) + ya, // y4 
-					drawAreaWidth, 25);			
-		}
-		
-	}
+		CanvasCoordinate coordinateOrigin = new CanvasCoordinate();
+		coordinateOrigin.setX(xa + drawAreaWidth/2);
+		coordinateOrigin.setY(ya + (int)(spring.getLen()*verticalScaleConstant));
+		mass.draw(g, coordinateOrigin, isFocus());
+	}	
 	
 	public void repaint()
 	{
@@ -136,6 +137,15 @@ public class SpringCanvas extends Field implements Canvas,FieldChangeListener {
 	protected void onFocus(int direction)
 	{
 		super.onFocus(direction);
+		for (int i=0;i<listeners.size();i++)
+		{
+			Object obj = listeners.elementAt(i);
+			if (obj instanceof CanvasListener)
+			{
+				CanvasListener listener = (CanvasListener)obj;
+				listener.onCanvasFocus(this);
+			}
+		}		
 		invalidate();
 	}
 	
@@ -289,5 +299,19 @@ public class SpringCanvas extends Field implements Canvas,FieldChangeListener {
 			}			
 		}
 		return false;
-	}	
+	}
+	public Mass getMass() {
+		return this.mass;
+	}
+	public Spring getSpring() {
+		return this.spring;
+	}
+	public Animation getAnimation() {
+		return animation;
+	}
+	public void setAnimation(Animation animation) {
+		// TODO Auto-generated method stub
+		this.animation = animation;
+	}
+
 }

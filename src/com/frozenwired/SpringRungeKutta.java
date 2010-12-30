@@ -1,17 +1,17 @@
 package com.frozenwired;
 
 public class SpringRungeKutta extends RungeKutta {
-	RoundMass roundMass;
+	public final static int SPRING_CONSTANT_CTX = 1;
+	public final static int SPRING_DAMPING_CTX = 2;
+	public final static int SPRING_MASS_CTX = 3;
 	Spring spring;
-	class RoundMass
-	{
-	  double mass = 0.5;
-	  double damping = 0.2;
-	}	
-	public SpringRungeKutta(Spring spring)
+	Mass mass;
+	private final double GRAVITATIONAL_CONSTANT = 10;
+	private boolean gravitationExist = true;
+	public SpringRungeKutta(Spring spring, Mass mass)
 	{
 		this.spring = spring;
-		roundMass = new RoundMass();
+		this.mass = mass;
 		this.setNumVars(2);
 		init();
 	}
@@ -24,8 +24,11 @@ public class SpringRungeKutta extends RungeKutta {
 	{
 		// v' = -(k/m)(x - R) - (b/m) v
 		double r = -spring.getSpringConstant()*(x[0] - spring.getOrigin() - spring.getRestLen())
-		- roundMass.damping*x[1];
-		return r/roundMass.mass;
+		- spring.getDamping()*x[1];
+		if (this.isGravitationExist())
+			return (r+mass.getMass()*this.GRAVITATIONAL_CONSTANT)/mass.getMass();
+		else
+			return (r)/mass.getMass();
 	}
 
 	public double diffeq2(double t, double[] x)
@@ -58,5 +61,11 @@ public class SpringRungeKutta extends RungeKutta {
 	}
 	public void setNumVars(int numVars) {
 		this.numVars = numVars;
+	}
+	public void setGravitationExist(boolean gravitationExist) {
+		this.gravitationExist = gravitationExist;
+	}
+	public boolean isGravitationExist() {
+		return gravitationExist;
 	}
 }

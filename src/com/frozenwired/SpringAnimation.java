@@ -6,22 +6,27 @@ import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.TouchEvent;
 import net.rim.device.api.ui.UiApplication;
+import net.rim.device.api.ui.component.CheckboxField;
 import net.rim.device.api.ui.component.Dialog;
 
-public class SpringAnimation implements Runnable, RungeKuttaEventListener, CanvasListener {
+public class SpringAnimation extends Animation implements Runnable, RungeKuttaEventListener, CanvasListener, FieldChangeListener {
 	private Vector listeners = new Vector();
 	private Canvas canvas;
 	private Spring spring;
+	private Mass mass;
 	private SpringRungeKutta springRungeKutta;
 	private boolean isAnimating = false;
 	private boolean isMoved = false;
+	private boolean gravitationExist = true;
 	Thread animationThread;
-	public SpringAnimation(Spring spring, Canvas canvas)
+	public SpringAnimation(Spring spring, Canvas canvas, Mass mass)
 	{
-		this.spring = spring;
+		this.setSpring(spring);
 		this.canvas = canvas;
+		this.setMass(mass);
 		this.canvas.addCanvasListener(this);
-		this.springRungeKutta = new SpringRungeKutta(spring);
+		this.canvas.setAnimation(this);
+		this.springRungeKutta = new SpringRungeKutta(spring, mass);
 		this.springRungeKutta.addRungeKuttaEventListener(this);
 		isAnimating = true;
 	}
@@ -31,7 +36,7 @@ public class SpringAnimation implements Runnable, RungeKuttaEventListener, Canva
 			if (isAnimating) 
 			{
 				springRungeKutta.calculate();
-				spring.setLen(springRungeKutta.getNextSpringLength());
+				getSpring().setLen(springRungeKutta.getNextSpringLength());
 				canvas.repaint();
 			}
 			try {
@@ -66,10 +71,10 @@ public class SpringAnimation implements Runnable, RungeKuttaEventListener, Canva
 		String msg = "t: " + double2str(simulationTime) + 
 		" x: " + double2str(vars[0]) +
 		" v: " + double2str(vars[1]);
-		fireOnAnimationChanged(msg);
+//		fireOnAnimationChanged(msg);
 	}
 	
-	private String double2str(double d)
+	public static String double2str(double d)
 	{
 		String str = "";
 		Double obj = new Double(d);
@@ -85,7 +90,7 @@ public class SpringAnimation implements Runnable, RungeKuttaEventListener, Canva
 		str = ds.substring(0, delimiterIndex) + ds.substring(delimiterIndex, delimiterIndex+4);
 		return str;
 	}
-	private String generateZeros(int n)
+	public static String generateZeros(int n)
 	{
 		String res = "";
 		for (int i=0;i<n;i++)
@@ -132,8 +137,8 @@ public class SpringAnimation implements Runnable, RungeKuttaEventListener, Canva
 	public void onCanvasMoved(Canvas canvas, int delta) {
 		System.out.println("delta: " + delta);
 		this.isMoved = true;
-		spring.setInitialLen(delta/canvas.getVerticalScaleConstant() + spring.getLen());
-		spring.setLen(delta/canvas.getVerticalScaleConstant() + spring.getLen());
+		getSpring().setInitialLen(delta/canvas.getVerticalScaleConstant() + getSpring().getLen());
+		getSpring().setLen(delta/canvas.getVerticalScaleConstant() + getSpring().getLen());
 		canvas.repaint();		
 	}
 	public void onCanvasReleased(Canvas canvas) {
@@ -144,7 +149,7 @@ public class SpringAnimation implements Runnable, RungeKuttaEventListener, Canva
 		System.out.println("onCanvasTap " + isAnimating);
 		if (isAnimating)
 			pauseAnimation();
-		
+
 	}
 	public void onCanvasTouchUp(Canvas canvas) {
 		// TODO Auto-generated method stub
@@ -156,5 +161,73 @@ public class SpringAnimation implements Runnable, RungeKuttaEventListener, Canva
 			resumeAnimation();
 		}
 		this.isMoved = false;
+	}
+	public void setMass(Mass mass) {
+		this.mass = mass;
+	}
+	public Mass getMass() {
+		return mass;
+	}
+//	private void fireOnAnimationSelected()
+//	{
+//		for (int i=0;i<listeners.size();i++)
+//		{
+//			Object obj = listeners.elementAt(i);
+//			if (obj instanceof AnimationListener)
+//			{
+//				AnimationListener listener = (AnimationListener)obj;
+//				listener.onAnimationSelected(this);
+//			}			
+//		}		
+//	}
+	public void setSpring(Spring spring) {
+		this.spring = spring;
+	}
+	public Spring getSpring() {
+		return spring;
+	}
+	public void onCanvasFocus(Canvas canvas) {
+		fireOnAnimationChanged(calculateDampingRatio());
+//		fireOnAnimationSelected();						
+	}
+	private String calculateDampingRatio()
+	{
+		double dampingratio = 0;
+		double undampedAngularFrequency = Math.sqrt(this.spring.getSpringConstant()/this.mass.getMass());
+		dampingratio = this.spring.getDamping()/(2*this.mass.getMass()*undampedAngularFrequency);
+		String msg = "";
+		if (dampingratio > 1)
+		{
+			msg = double2str(dampingratio) + " (Overdamped)";
+		} else if (dampingratio == 1)
+		{
+			msg = double2str(dampingratio) + " (Critically damped)";
+		} else if (dampingratio > 0 && dampingratio < 1)
+		{
+			msg = double2str(dampingratio) + " (Underdamped)";			
+		} else if (dampingratio == 0)
+		{
+			msg = double2str(dampingratio) + " (Undamped)";
+		}		
+		return msg;
+	}
+	public void onValueChange(double oldValue, double newValue, int context) {
+		fireOnAnimationChanged(calculateDampingRatio());	
+	}
+	public void setGravitationExist(boolean gravitationExist) {
+		this.gravitationExist = gravitationExist;
+		this.springRungeKutta.setGravitationExist(gravitationExist);
+	}
+	public boolean isGravitationExist() {
+		return gravitationExist;
+	}
+	public void fieldChanged(Field field, int context) {
+		if (field instanceof CheckboxField)
+		{
+			CheckboxField checkBoxField = (CheckboxField)field;
+			boolean checked = checkBoxField.getChecked();
+			setGravitationExist(checked);				
+		}
+		
 	}
 }
